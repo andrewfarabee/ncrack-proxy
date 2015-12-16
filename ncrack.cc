@@ -253,6 +253,7 @@ print_usage(void)
       "  -6: Enable IPv6 cracking\n"
       "  -sL or --list: only list hosts and services\n"
       "  --datadir <dirname>: Specify custom Ncrack data file location\n"
+      "  --proxy <type://proxy:port>: Make connections via socks4,4a,http.\n"
       "  -V: Print version number\n"
       "  -h: Print this help summary page.\n"
       "MODULES:\n"
@@ -846,6 +847,7 @@ ncrack_main(int argc, char **argv)
     {"pass", required_argument, 0, 0},
     {"nsock-trace", required_argument, 0, 0},
     {"nsock_trace", required_argument, 0, 0},
+    {"proxy", required_argument, 0, 0},
     {0, 0, 0, 0}
   };
 
@@ -921,6 +923,12 @@ ncrack_main(int argc, char **argv)
             o.nsock_loglevel = NSOCK_LOG_INFO;
           else
             o.nsock_loglevel = NSOCK_LOG_ERROR;
+        } else if (!optcmp(long_options[option_index].name, "proxy") ||
+                   !optcmp(long_options[option_index].name, "proxies")) {
+          if (nsock_proxychain_new(optarg, &o.proxychain, NULL) < 0)
+            fatal("Invalid proxy chain specification.");
+          if (strlen(optarg) >= 7 && !(strncmp(optarg, "socks4a", 7)))
+            o.socks4a = true;
         } else if (!optcmp(long_options[option_index].name, "log-errors")) {
           o.log_errors = true;
         } else if (!optcmp(long_options[option_index].name, "append-output")) {
@@ -1951,7 +1959,7 @@ ncrack_read_handler(nsock_pool nsp, nsock_event nse, void *mydata)
   } else if (status == NSE_STATUS_EOF) {
     con->close_reason = READ_EOF;
 
-  } else if (status == NSE_STATUS_ERROR) {
+  } else if (status == NSE_STATUS_ERROR || status == NSE_STATUS_PROXYERROR) {
 
     err = nse_errorcode(nse);
     if (o.debugging > 2)
@@ -2311,10 +2319,15 @@ ncrack_probes(nsock_pool nsp, ServiceGroup *SG)
     serv->target->TargetSockAddr(&ss, &ss_len);
     if (serv->proto == IPPROTO_TCP) {
       if (!serv->ssl) {
-        nsock_connect_tcp(nsp, con->niod, ncrack_connect_handler,
-            DEFAULT_CONNECT_TIMEOUT, con,
-            (struct sockaddr *)&ss, ss_len,
-            serv->portno);
+        if (o.proxychain && o.socks4a) {
+          nsock_connect_tcp_socks4a(nsp, con->niod, ncrack_connect_handler,
+              DEFAULT_CONNECT_TIMEOUT, con, hostinfo, serv->portno);
+        } else {
+          nsock_connect_tcp(nsp, con->niod, ncrack_connect_handler,
+              DEFAULT_CONNECT_TIMEOUT, con,
+              (struct sockaddr *)&ss, ss_len,
+              serv->portno);
+        }
       } else {
         nsock_connect_ssl(nsp, con->niod, ncrack_connect_handler,
             DEFAULT_CONNECT_SSL_TIMEOUT, con,
@@ -2355,6 +2368,9 @@ ncrack(ServiceGroup *SG)
   /* create nsock p00l */
   if (!(nsp = nsock_pool_new(SG)))
     fatal("Can't create nsock pool.");
+
+  if (o.proxychain)
+    nsock_pool_set_proxychain(nsp, o.proxychain);
 
   gettimeofday(&now, NULL);
   nsock_set_loglevel(o.nsock_loglevel);
