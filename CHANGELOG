@@ -1,0 +1,181 @@
+                 
+               ~00000                                       
+              00000000                                      
+             ,000$ 0$+~                                     
+             $=0=  .0+0                                     
+             000    000                                     
+            :000    0~0                                     
+            0000.    0                                      
+            00000     .                                     
+           .000000                                          
+           0?= +.,.                                         
+          ,?00.$000                                         
+          00000~.:~0                                        
+          .$+00~?~000                                       
+          :00000.=0000                                      
+          ?00?00+=:  ,0,                                    
+     00000..0000~ 000000.   $0                              
+    00..0~0?0::00,?0::?$0.  00 ~                            
+   .0.   ,0?00000.0$,+,000.00 $00                           
+   0.   00.?00=00000~0+0:0000?0,~0?.                        
+  .0  +00   0+0000 0000=?~0000?00 00                        
+ .: .~~   .000=00000~00=000000+0.0~0$$.                     
+ 00 ,    ?00.. 000~000000000000.:0.0:0~   0$00.+            
+00.0    00   00?~000~000000000+00   + ~0000000000=$0000     
+   $   00   00.   .00,000000000000$.00000.    .0000+$+~00   
+  0   00  .0       000000000?~0000000.   0.   .0$000000+$0  
+ 0    0   0     000:$~0000=0.0000,$.       00   0000000000  
+     0   00    ?.0000      $0 0 .                     .0000 
+   .     $    ?000.                                     0 0 
+        0     +~?000                                        
+       0.    :000000?0     |=------=[ Ncrack ]=------=| 
+             0000$?+00                                      
+             00+0:~0$0+                                     
+             .0$000?00                                      
+               0?000000                                     
+                  .000~0  
+
+
+                  -- [ Ncrack Changelog ] --
+
+
+Ncrack 0.4ALPHA [2011-04-23]
+
+o Added the VNC module to Ncrack's arsenal. Thanks to rhh of rycon.hu for
+  implementing the module and discussing about it for further improvement.
+
+o Wrote the Ncrack Developer's Guide, which is meant to give an overall
+  insight into Ncrack's architecture and help programmers develop their own
+  modules (http://nmap.org/ncrack/devguide.html)
+
+o Fixed critical bug in RDP module, which caused Ncrack to fail cracking
+  some Windows 2003 server versions.
+
+o Added a mechanism (MODULE_ERR), which modules can use to report to the
+  Ncrack engine that the authentication wasn't completed due to an
+  application error. For instance, the VNC server often notifies the client
+  that there are "too many authentication failures" and Ncrack can then
+  close the running connections and wait some time until the above wears
+  off.  
+
+o Ncrack can now print the nsock EID (unique connection ID) in debugging
+  messages. This will greatly help us track problems, since error messages
+  will be matched to certain connections.
+
+
+Ncrack 0.3ALPHA [2010-09-07]
+
+o Ncrack can now crack the Remote Desktop Protocol on all Windows versions from
+  XP and above, with the introduction of the RDP module. Users are well advised
+  to read http://seclists.org/nmap-dev/2010/q3/450 for cracking Windows XP
+  machines since they can't handle many concurrent RDP connections.
+
+o Implemented the SMB module which can crack Microsoft's SMB/CIFS services as
+  well as UNIX Samba servers.
+
+o Introduced the '-f' option, which forces Ncrack to quit cracking a 
+  service after it finds one credential for it. Specifying the option twice
+  like '-f -f' will cause Ncrack to completely quit after any credential is
+  found on any service.
+
+o Added support for blank-password testing. Ncrack will now test a blank 
+  entry whenever it sees an empty line in any of the wordlists. The same
+  behaviour applies for passing the options --user '' or --pass ''.
+
+o Improved the Ncrack scorpion logo with an updated SVG version (see
+  the top of http://nmap.org/ncrack/)
+
+
+Ncrack 0.2ALPHA [2010-06-12]
+
+o Ncrack now interactively prints out discovered credentials whenever
+  the user presses the 'p' key.  Also, in verbose mode (-v), Ncrack
+  now prints new credentials whenever they are discovered.  Basic
+  statistics (cracking rate, number of credentials found, but not the
+  credentials themselves) can be obtained by pressing enter or another
+  key at any time.
+
+o Added the --resume option, which allows users to cancel (usually by
+  pressing Ctrl+C) and later restore a cracking session through a file
+  with the saved state. The Ncrack restoration file is saved at
+  .ncrack/ under the home user's directory for *nix systems and inside
+  the user's profile directory (normally under C:\Documents and
+  Settings\<user>\.ncrack\) in Windows. The file name format is
+  restore.<date>_<time> e.g: restore.2009-11-1_10-10 . The time isn't
+  in XX:XX format because Windows doesn't allow colons in filenames.
+
+o Implemented the -iN option which lets Ncrack review Nmap normal
+  (-oN) output to find targets.
+
+o Implemented -iX option, which allows Ncrack to obtain targets by
+  reading an Nmap XML (-oX) output format file.
+
+o Ncrack's help screen (ncrack -h) now includes practical real-life
+  examples as well as a list of protocol cracking modules supported.
+  You can also list the supported modules with -V.
+
+o Added experimental pop3(s) support - patch initially made by Bucsay Balazs
+  and then modified by Ithilgore.
+
+o Ncrack now shares the Nsock library with Nmap rather than having its
+  own fork.  This makes maintenance much easier.  This was
+  accomplished by adding a way to compile Nsock without Libpcap (which
+  Ncrack doesn't use).
+
+o Fixed a timeout-related error which was due to the way Nsock caches
+  its time values to avoid too many gettimeofday() system calls,
+  leading to Ncrack thinking that negative time had elapsed in some
+  cases.  See the report at http://seclists.org/nmap-dev/2010/q2/450.
+ 
+o Fixed bug which caused an endless loop before Ncrack could exit
+  properly (reported at http://seclists.org/nmap-dev/2010/q2/746).
+
+o Fixed several memory leaks with the help of Valgrind. Also conducted a
+  Valgrind test for all modules. A report on a big memory leak was made here:
+  http://seclists.org/nmap-dev/2010/q1/1140
+
+o Fixed a problem which lead to the configure script being executed
+  twice for each of Ncrack's dependency libraries.  Compilation is
+  much faster now.
+
+o Added cleanup function for modules. This is made possible by a
+  function pointer (ops_free) in the Connection class, that
+  deallocates all internal struct members of misc_info . Since these
+  are module-specific data, each module should initialize this
+  function upon first invocation.
+
+o Added a snprintf function to Buf class. This is really handy for
+  module writers since it allows multiple I/O operations in
+  one line.
+
+o Changed the module API Connection class to split the old iobuf
+  system into two separate iobufs (one for inbound and one for
+  outbound data).
+
+o We now use the same default password list as Nmap, which is based on
+  data from many compromised/leaked systems.  We also have included
+  several individual files which can be used instead, such as Solar
+  Designer's password file from his cracking application John.
+
+o Added the --user and --pass options for command-line user and
+  password list specification.
+
+o Reported to Microsoft an issue on Windows (running on Windows rather
+  than against it) which was slowing the scans down
+  (http://seclists.org/nmap-dev/2009/q2/774). Microsoft wasn't able to
+  reproduce the problem
+  (https://connect.microsoft.com/WNDP/feedback/ViewFeedback.aspx?FeedbackID=479640),
+  but it seems that changes made by ESET Nod32 AV on Ithilgore's
+  machine may have been the problem.  It works for him if he disables
+  Nod32, so users might consider trying that if they experience poor
+  performance.
+
+o Fixed a compilation failure which occurred at linking when OpenSSL
+  was not available on the system.
+
+o Added this CHANGELOG file to the distribution.
+
+Ncrack 0.01ALPHA [2009-08-10]
+
+o First public release of Ncrack.
+

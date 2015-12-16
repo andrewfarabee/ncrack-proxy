@@ -1,0 +1,460 @@
+TODO:
+
+* We should probably include the Microsoft Visual C++ 2010 Redistributable Package 
+  in the Windows installation setup file, since after moving to Visual Studio 
+  C++ 2010 Express, Windows systems demand msvcr100.dll in order for Ncrack
+  to run.
+
+* Start username-list gathering project. Gathering these from email
+  addresses may be the most powerful technique.
+
+* Implement connection retry (cr) timing option.
+
+* Fix a SSH module bug as described here:
+  http://seclists.org/nmap-dev/2010/q3/517
+
+* Consider adding an option for excluding cracking certain accounts. This
+  is important when we want to avoid locking out a critical account by
+  trying too many times. See discussion at:
+  http://seclists.org/nmap-dev/2011/q2/292
+
+* Handle username validation for services.  For example, if an FTP
+  server is anon only or if we enumerate SMB users, or some service
+  gives a user does not exist error, we should probably not waste time
+  trying to crack such users against those services.  We need to
+  figure out how this works when multiple services/hosts are being
+  cracked at the same time.
+
+* HTTP-form auth which will be based on the existing HTTP module and
+  will target HTTP forms will have to ideally be able to parse the
+  most common web forms out there. The user will also be given the
+  choice to specify certain form-related arguments that can make
+  Ncrack's job easier.
+
+* Discuss improvements on password/username-list manipulation.
+  e.g combo-lists, special format with which you could specify the
+  username/password to be tried reversed, or a username to be tested
+  as password, like this for example:
+  %username% #to test the user name as a password
+  %rev username% #username reversed
+  %%username%% #to test for %username% 
+
+* Perhaps improve option -U and -P options
+  so that user can give a comma separated list of files that will be
+  automatically concatenated by Ncrack.
+
+* RDP module TODOs:
+  o provide generic endianess by coding a framework which is
+    endianess-agnostic. This will also be helpful for the .restore
+    file portability (see relevant task).
+  o check if RDP cracking can go faster by issuing more than 1 pair of
+    credentials per connection (which is what happens now). This will
+    require the sending of special scancodes which will instruct the RDP
+    server to 'delete' the previous username/password (usually only needed
+    for the username if it is changed, since the password is automatically
+    deleted by the server, when wrong). A scancode (usually 'tab')
+    for switching between username and password will also have to be sent.
+  o see if it is possible to send an 'empty' password. This is currently
+    not easy to do, since the RDP server ignores an 'empty' password sent in
+    the initial client_info packet, and it has to be manually entered later
+    by the user. In order to automate this, special scancodes must be sent
+    like above. Windows Vista and above also require you to select the user
+    first, before being able to type the password. Automating this can be
+    hard.
+  o Support NLA: http://seclists.org/nmap-dev/2010/q3/526
+  o Figure out why it isn't working against Windows 7 for Thomas
+    Buchanan: http://seclists.org/nmap-dev/2010/q3/505
+    --> According to the discussion at this nmap-dev thread, it appears that
+    the problem Thomas has been describing only appears on his Windows 7
+    version which comes from a public release candidate of Windows 7. No other
+    Windows 7 version displays this behaviour. We are waiting to see if other
+    people come across this problem, since so far this bug can't be replicated.
+  o See what's wrong with: http://seclists.org/nmap-dev/2010/q3/643
+    
+
+* Convert telnet module to use new inbuf/outbuf system.
+  --> It already does, but needs some fixes.
+
+* Think about packet trace. Obviously without pcap or something similar,
+  we can only print info about TCP payloads or connection
+  initiations/endings.
+  How can I get the unique connection id from nsock? --> With nsi_id() 
+
+* Discuss about an option that will make Ncrack do a round-robin attack when
+  targeting many hosts in parallel. For example, suppose you crack 5 different
+  services (perhaps from the same subnet): then Ncrack will do 1 authentication
+  attempt against the 1st host, then the 2nd, then the 3rd, ... and then start
+  from the 1st again. This is to avoid possible lockout mechanisms. Note,
+  that you could emulate this behaviour (but not in the exact same way) by
+  configuring the option of 'connection-delay' for all hosts. However this will
+  result in bursts of packets if the connection-delay is the same for all hosts
+  and it would be too much of a trouble to assign and calculate a
+  different 'connection-delay' for each host (so as to emulate the round-robin
+  behaviour).
+
+* Extend opensshlib to support SSH version 1, as well as additional
+  diffie-hellman algorithms.
+
+* For session saving (--resume) consider going to second granularity in the
+  filename. This avoids occasions when the file is overwritten because the
+  user invoked Ncrack in the same minute and decided to cancel again.
+
+* Take care of portability (endian) issues for --resume option.
+  Currently it stores integers and the like in the system binary
+  format.
+
+* Complete output engine. The main thing left is support for XML output using
+  the option -oX.
+
+* Solve the ssh username/password special iteration challenge as mentioned here:
+  http://seclists.org/nmap-dev/2009/q3/0119.html
+
+* If a connection times out continuously for 1 service and the rest of the
+  services need to poll for new events through nsock_loop, the fact that
+  ncrack_connection_end calls ncrack_probes again won't let that happen
+  So for many errors of 1 connection perhaps just toss service into a special
+  list so that we can move on for the time being.
+
+* Wider Ncrack promotion
+
+* Complete dynamic timing engine.
+ - Some details from SoC application:
+   As of yet, the engine is "smart" enough to be able to adapt to some
+   trivial end-cases e.g lower the number of parallel probes when we
+   get more than a certain number of RSTs from our target in a certain
+   amount of time. Of course, the user has the final say on how the
+   engine will behave, depending on whether or not he defined certain
+   time-related arguments during the initial Ncrack invocation.  The
+   engine should ideally be able to adapt more intelligently to the
+   given network conditions and the special characteristics of our
+   targets. This implies that it will be able to deduce on its own the
+   best possible value of parallel probes and other time-related
+   parameters (for example, if it should wait between each
+   authentication try and for how long). Since Ncrack is based on
+   Nsock which is a socket-abstraction layer and we have no access to
+   raw sockets or packet-crafting libraries (the user can invoke
+   Ncrack without root privileges after all), we only have TCP itself
+   as a feedback mechanism for the network conditions. This can prove
+   tricky for our work. Our engine might have to be based on
+   trial-and-error and partial statistical analysis to take some of
+   its decisions.
+
+   One idea would be to keep a history of the average performance for
+   each target and for each time-related metric. After some
+   experimentation with each target and depending on the network
+   conditions, our engine will be able to decide which of the
+   different set of saved values are most suitable for the
+   moment. However, this has to be flexible and prone to be
+   dynamically adapted, since network traffic is susceptible to
+   change. The "saved history" will mostly be used as a mechanism for
+   better decision-taking. Ncrack should be as accurate and fast as
+   possible, at the same time. As a result, when increasing the number
+   of parallel probes doesn't lead to further increase in the average
+   rate of authentication tries, it should back off and try with less
+   probes. This is the experimentation-phase we mentioned above. Upon
+   seeing that further reduction of the probes leads to decrease in
+   performance, it should again try to increase them. All of this
+   implies that we define some sort of 'average ideal' performance
+   with which the current performance will be compared. This metric
+   can be derived from a statistical analysis of our 'saved history'
+   so far.
+
+* For -vv verbose mode, possibly save the banner for each service and show it at
+  the end. Also we can show a sample session, showing the special patterns used
+  in the authentication steps. These may also prove useful for user submissions
+  of new exotic patterns for modules, like telnet, that need them.
+
+* SMTP/IMAP/POP3 - some initial IMAP/POP3 patches have already been
+  provided by Balázs Bucsay. Further development of them, as well as
+  SMTP support should be one goal to cover the existing email
+  infrastructure.
+
+* Improve SMB module, adding NetBIOS support etc.
+
+* Consider adding a spec file for distributing RPMs.
+
+* Discuss whether Ncrack should use different default username/password lists
+  based on the protocol/service it is trying to crack.
+  
+* Consider collecting/assemblying protocol-optimized username/password lists.
+
+* Consider extending Buf()'s class functions so that you can push and pop
+  data in layers. Right now, you can only append data, but for example 
+  you cannot leave some empty space and come and fill it in later. 
+
+* Think about making Ncrack distributed (e.g with one master, several agents)
+
+============================= :DONE: =========================================
+
+* Write Ncrack Developer's Guide. 
+
+* Update CHANGELOG to note changes since last release
+
+* Make new post-soc Ncrack release with SMB and RDP
+
+* Remove excess verbosity in RDP cracker module (e.g. don't print
+  "Account credentials are NOT valid." for each test unless in high
+  debugging mode)
+
+* Add remote desktop (rdp) cracking. Ithilgore says there are few
+  rdesktop crackers out there.  Need to think about whether this makes
+  most sense in Ncrack, NSE, or both.
+
+* Improve current scorpion logo on the Ncrack page. An SVG file would be best.
+
+* SMB support will be quite a demanding and time-consuming task but a
+  lot of research of this protocol has already been conducted by
+  Ron. Thus, a lot of our work can be based on his NSE-scripts.
+
+* Implement option to make Ncrack stop scanning after finding the
+  first credential pair (there is such an option in Hydra).  We should
+  probably provide 2 different versions of the option. One would
+  finish Ncrack after finding 1 password regardless of how many
+  services it is cracking in parallel. The other would finish Ncrack
+  after finding 1 password for every service it is cracking. We have
+  two ways of doing this: either with a separate switch (e.g -f and
+  -F) or using the already existing module option subsystem (-m, -g,
+  per-host e.g $ ncrack 127.0.0.1:22,f=yes) [we decided on -f to mean
+  "quit each service after one credential found" and -f -f for "quit
+  after any credential is found on any service".
+
+* Find a way to parse a 'blank' password from the command-line (--pass option).
+
+* We also should find a special way for treating the 'blank' password.
+  We decided to treat it the same way as Nmap--use a blank line in the
+  file as the designator for a blank password.
+
+* Improve the font on the current Ncrack page logo so it isn't so
+  lumpy (it's been resized or something which is causing the problem).
+
+* Discuss with nmap-dev about making and distributing a oN2oX converter
+  (Nmap Normal to XML output) so that we drop supporting the -iN option (which
+  seems to change at times) and instead focus on improving the -iX option.
+  The converter program could be in Python (more likely) or Perl and be
+  maintained as a common shared package between Ncrack and Nmap.
+  ---> For now we will try keeping up-to-date with Nmap's -oN format.
+
+* We should probably put an Ncrack logo atop the Ncrack page
+  (http://nmap.org/ncrack/).  For example, look at the Nping page at
+  http://nmap.org/nping/. 
+
+* Make a CHANGELOG showing the differences between 0.01ALPHA and 0.2ALPHA
+
+* Make 0.2ALPHA release
+  o Build Windows, Mac, Source packages
+  o Ask David for help with Mac
+  o Update web site
+  o Send to nmap-dev for testing
+
+* Do a valgrind memory leak and bug audit for all the modules
+  (ssh almost done, remaining: ftp, http, pop3, telnet).
+  There are still some minor/trivial errors reported by valgrind but most
+  of them are 'possibly lost' memory leaks related to Nsock and others are in
+  libcrypto (in which we don't have any access and surely don't want to
+  manually patch).
+
+* Windows Ncrack testing -- for example see
+  http://seclists.org/nmap-dev/2010/q2/435
+
+* Make free (misc_info) handlers for HTTP protocol.
+
+* Add --disable-pcap option to Nsock so that Ncrack and Nmap may share the
+  exact same Nsock version all the time.
+
+* Fix potentially big memory leak.  See this thread:
+  http://seclists.org/nmap-dev/2010/q1/1140
+  o Note, Fyodor can reproduce scanning against localhost ssh with
+    openssh-server-5.2p1-6.fc11.x86_64 on Fedora Core 11 x86_64
+  -- Already partially fixed one generic memory leak.
+
+* Update Ncrack License Terms (for year 2010)
+
+* Fully update man page to document the latest version of Ncrack.  For
+  example, --user and --pass and --resume options aren't mentioned at
+  all.
+
+* Fix configure-issue where ./configure is initially run twice instead of
+  just once. This happens for every library (nbase, nsock, opensshlib). Seems to
+  be related with an old issue. (See below)
+  --> Problem was that I had put two separate AC_OUTPUT directives. One for
+  modules AC_OUTPUT(modules/Makefile) and AC_OUTPUT(Makefile) for central
+  one. This made autoconf create, for some reason, 2 different 
+  CONFIG_SUBDIRS in the configure script. Solution was writing 
+  AC_OUTPUT(modules/Makefile Makefile).
+
+* In verbose mode it should tell when a service completes (note that
+  in some case a "completion" is really a failure, for example
+  "scanme.nmap.org 22")
+
+* Provide a compact and clean way of providing additional information
+  (like the credential pairs found so far) in the interactive status
+  message.
+  - We may have a key users can press at any time, like 'p' for
+    passwords, to show the currently discovered credential list.
+    Should probably use the same format Ncrack users to print all the
+    credentials at the end of its run.  The normal interactive status
+    message should probably say something like 'press 'p' to list
+    discovered passwords' if at least one valid credential has been
+    discovered.
+  - May warrant nmap-dev discussion
+
+* Add some real-life examples to the ncrack -h output.
+
+* Add to ncrack -h and maybe -V output a list of the modules
+  supported.
+
+* Make sure the -v option parsing works well.  Right now, we get:
+  ./ncrack -v -P lists/top50000.pwd localhost:22 scanme.nmap.org:22
+  Invalid argument to -v: "-P".
+  QUITTING!
+
+* Integrate part of recently leaked hotmail passwords into Ncrack's password
+  database.
+
+* Fix -oN importer to work with new Nmap output format
+
+* Integrate nmap's new password lists.
+
+* Solve bug that sometimes causes http module to report as the password
+  found the one immediately following the real password found. [This seems
+  to be OK since the last changes, but we need to be careful in case it
+  comes up again]
+
+* Find a generic way to fix memory leaks of Connection's void *misc_info.
+  The problem is that we want a way so that the Connection class destructor can
+  remove any dynamically-allocated member, without knowing about the inner
+  structure of them (they can be cast to anything since they are void * and
+  each module casts it as a completely unique struct)
+
+* Add --resume support
+
+* Integrate Solar Designer's list to Ncrack.
+  --> Has been added as separate file, but we are waiting for the
+  frequency file to merge the best passwords in our default.pwd.  We
+  could always merge it in an equally balanced way by using the same
+  frequencies for our current default lst for SD's and merge them.
+
+* We may also need to increase the maximum number of half-open connections in
+  Windows: see http://half-open.com/home_en.htm - We could do this by asking the
+  user during Ncrack setup if he wants to update the system's imposed limit - if
+  he doesn't want to accept the change, then he will possibly suffer a
+  performance degradation.
+  --> This is way too intrusive and Ncrack isn't really impeded by it.
+
+* Implement option that lets user specify the usernames and passwords directly
+  in the command-line, like -u guest,test etc.
+
+* Improve -iX parser to handle more of XML, particularly newlines.
+
+* Await reply from Microsoft for Windows Firewall RFC deviation:
+  http://seclists.org/nmap-dev/2009/q2/0774.html
+  http://seclists.org/nmap-dev/2009/q2/0780.html
+  https://connect.microsoft.com/WNDP/feedback/ViewFeedback.aspx?FeedbackID=470990
+  ------> It seems the Microsoft guys found the thing not reproducible but they
+  must have tested it under XP SP2 whereas the behaviour seems to be occuring
+  only in SP3. I have mentioned that in a comment but they probably won't see
+  that again, so perhaps I might have to resubmit the issue. 
+  ------> I have resubmitted the bug, pointing out now that it only applies
+  to XP SP3:
+  https://connect.microsoft.com/WNDP/feedback/ViewFeedback.aspx?FeedbackID=479640
+  Microsoft responded - but according to those guys, this behaviour isn't
+  exhibited in a clean installation. Ongoing discussion on this one.
+  It seems they marked that bug as not reproducible finally.
+
+* Implement feature that can get input from Nmap's output files, to determine
+  which services to crack. Both -oN and -oX should be supported. Optionally,
+  some additional info could be extracted from version detection, if available,
+  to handle specific corner cases with certain servers.
+
+* Test more thoroughly the windows version of ncrack.
+
+* Add IPv6 support
+
+* Search for good username and password lists, or find ways to
+  generate them (e.g. web scraping for email addresses or account
+  names or whatever). Usernames seems like a relatively easy problem,
+  while password lists are more difficult to come by.
+  * Assembled a lot of lists. Now need to sort them out.
+
+* Possibly adapt Nmap license headers to Ncrack specifically.
+  --> This has been halted for a while, until a unified solution for all
+  Nmap tools is found.
+
+* Documentation: write the man page (in Docbook XML, at least for the
+  final version)
+
+* Test buffering cases for all modules, when for example we need to search for
+  certain patterns but the pattern is split in 2 separate packets due to a
+  small window.
+  ---> SSH already does that by using the ssh_loop_read function and I have
+  already added the Buf class (derived from buffer.c of OpenSSH) that can be
+  used to append the replies from each protocol. Now I only need to adapt the
+  FTP and TELNET modules to use that instead of the con->buf thing.
+  All modules have now been replaced to use the Buf class.
+
+* On a brand-new checkout, configure seems to be running 2 times for the
+  libraries nbase and nsock - one time in the beginning of calling ./configure
+  and a second time after typing make. Why does this happen? In addition, there
+  seems to be a problem when changing the order of linking - if nbase comes
+  first and nsock comes second, linking problems between the two arise. However,
+  nmap has them in that order without any problems.
+  This problem seems to have been automagically solved.
+
+* For future reference on modules like http: consider saving state information
+  like the http parsing that needs to be done only 1 time per host inside the
+  service, so that future connections can refer to that instead of having to
+  redo that work. That will probably add to the speed.
+  State information is already used by nearly all modules.
+
+* Make Ncrack packaging - a source tarball for *nix and a Windows installer.
+
+* Fix the false positives/false negative issues we've been seeing
+  when scanning over the Internet for http module.
+
+* Add ssl support (through nsock).
+
+* Implement Service timeout, where the user imposes a certain timeout
+  after which the service is marked as finished regardless of the progress
+  so far.
+
+* Refine interactive Status Report to print an estimate of the time left.
+
+* Change Ncrack's build system so that whenever ssl isn't found on the system,
+  the ssh module isn't included/compiled, since it requires (the underlying
+  opensshlib actually does) it in order to work.
+
+* Add output info when Ncrack finishes, the way Nmap does it.
+  Also -v should print additional info like how many connections were
+  initiated etc 
+  Example from Nmap:
+    (verbose)
+    Nmap done: 1 IP address (1 host up) scanned in 0.26 seconds
+    Raw packets sent: 1000 (44.000KB) | Rcvd: 2010 (84.440KB)
+    (normal)
+    Nmap done: 1 IP address (1 host up) scanned in 0.27 seconds
+
+* Refine core engine. 
+
+* Code ssh module
+
+* Test telnet module, thoroughly
+
+* Port Ncrack to Windows
+
+* Complete ncrack callback handlers documentation.
+
+* Appended Nmap license headers to each ncrack file.
+
+* Handle case when connection limit is more than the total passwords/usernames
+  in list
+
+* Implement on-the-fly 'Status Report' within interactive Ncrack output.
+
+* Code output.cc and -oN option.
+
+* Implement interactive Ncrack output.
+
+* Implement queueing mechanism for ServiceGroup lists.
+
+* Studied SSH RFCs.
+
