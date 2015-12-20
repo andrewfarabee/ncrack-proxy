@@ -361,6 +361,8 @@ nsock_event_id nsock_connect_tcp_socks4a(nsock_pool nsp, nsock_iod ms_iod,
   struct npool *ms = (struct npool *)nsp;
   struct nevent *nse;
 
+  nsi->hostname = safe_malloc(strlen(targetname));
+  strncpy(nsi->hostname, targetname, strlen(targetname));
   assert(nsi->state == NSIOD_STATE_INITIAL || nsi->state == NSIOD_STATE_UNKNOWN);
 
   nse = event_new(ms, NSE_TYPE_CONNECT, nsi, timeout_msecs, handler, userdata);

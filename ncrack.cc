@@ -2321,7 +2321,8 @@ ncrack_probes(nsock_pool nsp, ServiceGroup *SG)
       if (!serv->ssl) {
         if (o.proxychain && o.socks4a) {
           nsock_connect_tcp_socks4a(nsp, con->niod, ncrack_connect_handler,
-              DEFAULT_CONNECT_TIMEOUT, con, hostinfo, serv->portno);
+              DEFAULT_CONNECT_TIMEOUT, con, serv->target->targetname,
+              serv->portno);
         } else {
           nsock_connect_tcp(nsp, con->niod, ncrack_connect_handler,
               DEFAULT_CONNECT_TIMEOUT, con,
