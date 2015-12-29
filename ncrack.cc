@@ -2008,7 +2008,7 @@ ncrack_write_handler(nsock_pool nsp, nsock_event nse, void *mydata)
 
   } else if (status == NSE_STATUS_SUCCESS)
     call_module(nsp, con);
-  else if (status == NSE_STATUS_ERROR) {
+  else if (status == NSE_STATUS_ERROR || status == NSE_STATUS_PROXYERROR) {
     err = nse_errorcode(nse);
     if (o.debugging > 2)
       error("%s (EID %li) nsock WRITE error #%d (%s)", hostinfo, eid, err, strerror(err));
@@ -2094,7 +2094,8 @@ ncrack_connect_handler(nsock_pool nsp, nsock_event nse, void *mydata)
 
     return call_module(nsp, con);
 
-  } else if (status == NSE_STATUS_TIMEOUT || status == NSE_STATUS_ERROR) {
+  } else if (status == NSE_STATUS_TIMEOUT || status == NSE_STATUS_ERROR
+             || status == NSE_STATUS_PROXYERROR) {
 
     /* This is not good. connect() really shouldn't generally be timing out. */
     if (o.debugging > 2) {
