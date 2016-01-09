@@ -848,6 +848,7 @@ ncrack_main(int argc, char **argv)
     {"nsock-trace", required_argument, 0, 0},
     {"nsock_trace", required_argument, 0, 0},
     {"proxy", required_argument, 0, 0},
+    {"proxies", required_argument, 0, 0},
     {0, 0, 0, 0}
   };
 
@@ -2321,6 +2322,8 @@ ncrack_probes(nsock_pool nsp, ServiceGroup *SG)
     if (serv->proto == IPPROTO_TCP) {
       if (!serv->ssl) {
         if (o.proxychain && o.socks4a) {
+          if (!serv->target->targetname)
+            fatal("Socks4a requires a hostname. Use socks4 for IPv4.");
           nsock_connect_tcp_socks4a(nsp, con->niod, ncrack_connect_handler,
               DEFAULT_CONNECT_TIMEOUT, con, serv->target->targetname,
               serv->portno);
@@ -2371,8 +2374,10 @@ ncrack(ServiceGroup *SG)
   if (!(nsp = nsock_pool_new(SG)))
     fatal("Can't create nsock pool.");
 
-  if (o.proxychain)
-    nsock_pool_set_proxychain(nsp, o.proxychain);
+  if (o.proxychain) {
+    if (nsock_pool_set_proxychain(nsp, o.proxychain) == -1)
+      fatal("Unable to set proxychain for nsock pool");
+  }
 
   gettimeofday(&now, NULL);
   nsock_set_loglevel(o.nsock_loglevel);
