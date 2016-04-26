@@ -378,7 +378,7 @@ nsock_event_id nsock_connect_tcp_socks4a(nsock_pool nsp, nsock_iod ms_iod,
   nsock_connect_internal(ms, nse, SOCK_STREAM, IPPROTO_TCP, &ss, sizeof(ss), port);
   nsock_pool_add_event(ms, nse);
 
-  return nse->iod;
+  return (nsock_event_id) nse->iod;
 }
 
 /* Request an SCTP association to another system (by IP address).  The in_addr
