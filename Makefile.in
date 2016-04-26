@@ -37,7 +37,7 @@ MOD_OBJS := $(addprefix modules/,$(MOD_OBJS))
 MOD_SRCS = @MODULES_SRCS@
 MOD_SRCS := $(addprefix modules/,$(MOD_SRCS))
 
-LIBS = @LIBNSOCK_LIBS@ @LIBNBASE_LIBS@ @OPENSSL_LIBS@ @OPENSSH_LIB@ 
+LIBS = @LIBNSOCK_LIBS@ @LIBNBASE_LIBS@ @OPENSSL_LIBS@ @OPENSSH_LIB@
 
 DESTDIR =
 
@@ -64,7 +64,7 @@ all: @NBASE_BUILD@ @NSOCK_BUILD@ @OPENSSHLIB_BUILD@ @MODULES_BUILD@
 $(TARGET): $(NSOCKDIR)/src/libnsock.a $(NBASEDIR)/libnbase.a $(OBJS) $(MOD_OBJS)
 	@echo Compiling Ncrack... 
 	rm -f $@
-	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(MOD_OBJS) $(LIBS)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJS) $(MOD_OBJS) $(LIBS) -lrt
 	@echo Ncrack compiled successfully!
 
 
