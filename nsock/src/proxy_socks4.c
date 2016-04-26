@@ -193,13 +193,18 @@ static int handle_state_initial_socks4a(struct npool *nsp, struct nevent *nse,
                                         void *udata) {
   struct proxy_chain_context *px_ctx = nse->iod->px_ctx;
   char *target_name = nse->iod->hostname;
-  size_t target_name_len = strlen(target_name) * sizeof(char);
   unsigned short port;
   struct proxy_node *next;
   struct socks4_data socks4a;
-  size_t outgoing_len = sizeof(struct socks4_data) + target_name_len + 1;
   uint8_t *outgoing;
+  size_t target_name_len, outgoing_len, socks4_len;
   int timeout;
+  if (!target_name) {
+    fatal("Socks4a not supplied targetname at initialization.");
+  }
+  target_name_len = strlen(target_name) * sizeof(char);
+  socks4_len = sizeof(struct socks4_data);
+  outgoing_len = socks4_len + target_name_len + 1;
 
   px_ctx->px_state = PROXY_STATE_SOCKS4_TCP_CONNECTED;
 
@@ -217,8 +222,8 @@ static int handle_state_initial_socks4a(struct npool *nsp, struct nevent *nse,
   outgoing = safe_zalloc(outgoing_len);
 
   /* Copy contents of socks4a data packet into memory */
-  memcpy(outgoing, &socks4a, sizeof(socks4a));
-  memcpy(outgoing + sizeof(socks4a), target_name, target_name_len + 1);
+  memcpy(outgoing, &socks4a, socks4_len);
+  memcpy(outgoing + socks4_len, target_name, target_name_len + 1);
 
   nsock_write(nsp, (nsock_iod)nse->iod, nsock_proxy_ev_dispatch, timeout, udata,
               (char *)outgoing, outgoing_len);
